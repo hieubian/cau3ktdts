@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bộ đếm đồng bộ</title>
+<style>
+:root{--bg:#fff;--bg2:#f5f5f7;--fg:#1d1d1f;--mute:#6e6e73;--line:#d2d2d7;--acc:#0071e3;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--bg2:#1c1c1e;--fg:#f5f5f7;--mute:#98989d;--line:#38383a;--acc:#2997ff;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:1040px;margin:0 auto;padding:36px 20px 80px}
+h1{font-size:34px;letter-spacing:-.02em;margin:0 0 4px}
+.sub,.note{color:var(--mute);margin:0 0 20px}.note{font-size:14px;margin:0 0 10px}
+h2{font-size:22px;letter-spacing:-.01em;margin:48px 0 6px}
+h3{font-size:16px;margin:0 0 8px}
+.row{display:flex;align-items:center;gap:12px;margin:14px 0;flex-wrap:wrap}.row>b{min-width:78px;font-weight:600}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--bg2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--fg);font:inherit;font-size:15px;padding:7px 14px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.2);font-weight:600}
+label{display:block;color:var(--mute);font-size:14px;margin:12px 0 5px}
+input[type=text],input[type=number],select{width:100%;font:inherit;font-size:18px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px;align-items:center}
+.chips small{color:var(--mute);margin-right:4px}
+.chips button{border:0;background:var(--bg2);color:var(--acc);font:inherit;font-size:14px;padding:5px 12px;border-radius:99px;cursor:pointer}
+details{margin:10px 0}summary{cursor:pointer;color:var(--acc)}
+.opts{display:grid;gap:10px;margin-top:10px;padding:14px;background:var(--bg2);border-radius:12px}
+.opts label{display:flex;gap:8px;align-items:center;color:var(--fg);margin:0;font-size:15px}.opts select{font-size:15px;padding:6px 10px}
+.err{color:#ff453a}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:5px 10px;text-align:center;border:1px solid var(--line);font-size:15px}
+th{color:var(--mute);font-weight:500;background:var(--bg2)}
+td.u{color:var(--mute);background:var(--bg2)}td.h{font-weight:700;color:var(--acc)}
+.ov{display:inline-block;line-height:1;border-top:1.6px solid currentColor;padding-top:1px}sub{font-size:.7em}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chain span{background:var(--bg2);border-radius:8px;padding:2px 9px;font-variant-numeric:tabular-nums;font-size:14px}
+.chain i{color:var(--mute);font-style:normal}
+.km{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--bg2);border-radius:14px;padding:12px;text-align:center}
+.paper{background:#fff;color:#000;border-radius:12px;padding:8px}
+.res{font-size:20px;font-weight:600;margin:10px 0 2px}.eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.eq div{background:var(--bg2);border-radius:12px;padding:10px 14px;font-size:18px}
+.eq small{display:block;color:var(--mute);font-size:13px}
+.alt{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px;font-size:13px}
+.alt button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:2px 8px;cursor:pointer;font:inherit;font-size:13px}
+.alt button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn{border:0;background:var(--acc);color:#fff;font:inherit;font-size:15px;padding:8px 16px;border-radius:99px;cursor:pointer;margin:8px 8px 8px 0}
+.btn.g{background:var(--bg2);color:var(--acc)}
+.lg{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:13px}.lg i{width:14px;height:12px;border-radius:3px;display:inline-block}
+.zb{border:0;background:none;color:var(--fg);font:inherit;font-size:18px;width:42px;height:42px;border-radius:8px;cursor:pointer;touch-action:manipulation}
+.zb:hover{background:var(--bg2)}#zt{margin:0}#zt td{padding:0}#zt th{min-width:42px;background:none;color:var(--fg)}#zt th:first-child{background:var(--bg2)}#zt td.u{color:var(--mute);background:var(--bg2);min-width:42px}.hint{display:none;color:var(--mute);font-size:13px;margin:6px 0 0}
+@media(max-width:560px){
+main{padding:22px 14px 64px}h1{font-size:28px}h2{font-size:20px;margin-top:36px}
+.row{align-items:stretch}.row>b{min-width:100%}
+.seg{width:100%}.seg button{flex:1;padding:11px 8px;min-height:44px}
+#tabs{display:grid;grid-template-columns:1fr 1fr}
+.chips button,.alt button,.btn{min-height:40px;padding:8px 14px}
+input[type=text],input[type=number],select,.opts select{font-size:16px}
+.two{grid-template-columns:1fr}.eq{grid-template-columns:1fr 1fr}.eq div{font-size:16px;padding:8px 10px}
+.km{grid-template-columns:1fr}th,td{padding:5px 7px;font-size:14px}.hint{display:block}.paper svg{max-width:none}}
+.card .paper{overflow-x:auto}
+@media print{.np{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<main>
+<h1>Bộ đếm đồng bộ</h1>
+<p class="sub">Chọn dạng bài và Flip-Flop, nhập đề — đáp án hiện ngay.</p>
+
+<div class="row np"><b>Dạng bài</b><div class="seg" id="tabs">
+<button data-m="mod">Đếm modul M</button><button data-m="seq">Tự hành (dãy số)</button><button data-m="z">Hai đầu ra Z1, Z2</button><button data-m="bin">Mã Gray / nhị phân</button></div></div>
+
+<div class="np" id="panels">
+<div id="p_mod"><div class="seg" id="dir"><button data-d="up">Đếm tiến</button><button data-d="down">Đếm lùi</button></div>
+<label>Modul M (2 → 16)</label><input type="number" id="M" min="2" max="16" value="10"></div>
+<div id="p_seq"><label>Dãy trạng thái thập phân (0 → 15), cách nhau bằng dấu phẩy. Hết dãy sẽ quay về số đầu.</label><input type="text" id="seq"></div>
+<div id="p_z"><label>Giản đồ thời gian Z1, Z2 như đề — chạm vào ô để đổi 0 / 1. Cột cuối lặp lại nhịp 0 (hết chu kỳ).</label>
+<div class="scroll"><table id="zt"></table></div>
+<div class="chips" style="margin-top:10px"><button id="zadd">+ Thêm nhịp</button><button id="zdel">− Bớt nhịp</button></div>
+<p class="note">Z1 = Q1, Z2 = Q2; hai bit phụ Q3Q4 được điền 00, 01, 10, 11 theo thứ tự xuất hiện của từng tổ hợp Z1Z2 (Ví dụ 2, Bài 9).</p></div>
+<div id="p_bin"><div class="chips"><small>Mẫu:</small><button data-b="000, 001, 011, 010, 110, 111, 101, 100">Gray 3 bit</button><button data-b="0000, 0001, 0011, 0010, 0110, 0111, 0101, 0100, 1100, 1101, 1111, 1110, 1010, 1011, 1001, 1000">Gray 4 bit</button><button data-b="000, 001, 010, 011, 100">000 → 100</button></div>
+<label>Các trạng thái nhị phân theo chu kỳ</label><input type="text" id="bin"></div>
+</div>
+
+<div class="row np"><b>Flip-Flop</b><div class="seg" id="ffs"><button data-f="JK">JK</button><button data-f="RS">RS</button><button data-f="T">T</button><button data-f="D">D</button></div></div>
+
+<details class="np"><summary>Tuỳ chọn</summary><div class="opts">
+<label><input type="checkbox" id="cShare" checked> Dùng chung cổng khi J<sub>i</sub> = K<sub>i</sub></label>
+<label><input type="checkbox" id="cCyc" checked> Bảng chân lý theo thứ tự nhịp đếm</label>
+<label><input type="checkbox" id="cSplit"> Tách cụm cột J và cụm cột K</label></div></details>
+
+<div class="chips np" id="chips"></div>
+<div id="out"></div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const S={m:'mod',d:'up',f:'JK'};
+const COL=[['#2563eb','rgba(59,130,246,.15)','#dbeafe'],['#059669','rgba(16,185,129,.15)','#d1fae5'],['#d97706','rgba(245,158,11,.16)','#fef3c7'],['#7c3aed','rgba(139,92,246,.15)','#ede9fe'],['#e11d48','rgba(244,63,94,.15)','#ffe4e6']];
+const Z10='0, 1, 1, 1, 1, 1, 0, 0, 0, 0',Z20='0, 1, 0, 1, 0, 1, 1, 1, 0, 1';
+const PRE=[
+['Đề thi 15–20',[
+['Đề 15 · tự hành 2…15',{m:'seq',seq:'2, 4, 6, 8, 10, 12, 14, 15'}],
+['Đề 16 · tiến mod 11',{m:'mod',M:11,d:'up'}],['Đề 17 · tiến mod 7',{m:'mod',M:7,d:'up'}],
+['Đề 18 · lùi mod 9',{m:'mod',M:9,d:'down'}],['Đề 19 · tự hành 1…15',{m:'seq',seq:'1, 3, 5, 7, 9, 11, 13, 15'}],
+['Đề 20 · tiến mod 6',{m:'mod',M:6,d:'up'}]]],
+['Slide & bài tập',[
+['Câu 7 · BCD mod 10',{m:'mod',M:10,d:'up',n:'Q1'}],['Câu 8 · lùi mod 12',{m:'mod',M:12,d:'down',n:'Q1'}],
+['Câu 9 · tự hành 9 số',{m:'seq',seq:'1, 2, 5, 6, 8, 11, 12, 13, 15',n:'Q1'}],['Câu 3_5 · tự hành 8 số',{m:'seq',seq:'2, 3, 5, 7, 9, 11, 13, 14',n:'Q1'}],
+['Câu 3_3 · Z1Z2 · RS',{m:'z',z1:Z10,z2:Z20,f:'RS',n:'Q1'}],['Câu 3_4 · Z1Z2 · RS',{m:'z',z1:'0, 1, 1, 1, 0, 1, 1, 0, 0, 0',z2:'0, 1, 0, 1, 0, 1, 1, 0, 0, 1',f:'RS',n:'Q1'}],['Ví dụ 2 · Z1Z2 · RS',{m:'z',z1:'0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0',z2:'0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0',f:'RS',n:'Q1'}],
+['Gray 3 bit',{m:'bin',bin:'000, 001, 011, 010, 110, 111, 101, 100',n:'Q1'}],['P3.07 · tiến mod 5',{m:'mod',M:5,d:'up',n:'Q1'}],['P3.08 · tiến mod 6 · T',{m:'mod',M:6,d:'up',f:'T',n:'Q1'}]]]];
+
+/* ---------- Flip-Flop ---------- */
+function ex(f,q,p){
+  if(p===null)return f==='JK'||f==='RS'?['X','X']:['X'];
+  if(f==='JK')return q?(p?['X','0']:['X','1']):(p?['1','X']:['0','X']);
+  if(f==='RS')return q?(p?['0','X']:['1','0']):(p?['0','1']:['X','0']);
+  return f==='T'?[q!==p?'1':'0']:[String(p)];
+}
+const bits=(v,n)=>[...Array(n)].map((_,i)=>(v>>(n-1-i))&1);
+const qh=i=>`Q<sub>${i}</sub>`;
+
+/* ---------- Tối giản hàm (tất cả phương án tối ưu) ---------- */
+function covers(vals,n,nm){
+  const ones=[],zeros=[];vals.forEach((v,m)=>{if(v==='1')ones.push(m);if(v==='0')zeros.push(m)});
+  if(!ones.length)return[{t:'0',imps:[],html:'0'}];
+  if(!zeros.length)return[{t:'1',imps:[{fac:[],ones,lit:0,html:'1',key:''}],html:'1'}];
+  const all=[];
+  for(let p=0;p<3**n;p++){
+    let t=p,pat=[],lit=0;
+    for(let i=0;i<n;i++){const r=t%3;t=(t-r)/3;const v=r===2?-1:r;pat.push(v);if(v>=0)lit++}
+    let ok=true,has=false,cov=[];
+    for(let m=0;m<vals.length;m++)if(pat.every((v,i)=>v<0||v===((m>>(n-1-i))&1))){
+      if(vals[m]==='0'){ok=false;break}if(vals[m]==='1')has=true;cov.push(m)}
+    if(ok&&has)all.push({pat,lit,ones:cov.filter(m=>vals[m]==='1')});
+  }
+  const pr=all.filter(a=>!all.some(b=>b.lit<a.lit&&b.pat.every((v,i)=>v<0||v===a.pat[i]))).map(a=>{
+    const fac=[];a.pat.forEach((v,i)=>{if(v>=0)fac.push({pos:i,ff:nm[i],comp:v===0})});
+    return{...a,fac,html:fac.map(f=>f.comp?`<span class="ov">Q</span><sub>${f.ff}</sub>`:qh(f.ff)).join('·'),key:fac.map(f=>(f.comp?'!':'')+f.ff).join('*')};
+  });
+  let bn=1e9,bl=1e9,best=[];
+  (function go(s,cur,cov,lits){
+    if(cur.length>bn||(cur.length===bn&&lits>bl))return;
+    if(cov.size===ones.length){
+      if(cur.length<bn||lits<bl){bn=cur.length;bl=lits;best=[cur.slice()]}
+      else if(cur.length===bn&&lits===bl)best.push(cur.slice());
+      return;
+    }
+    for(let i=s;i<pr.length;i++){
+      if(!pr[i].ones.some(m=>!cov.has(m)))continue;
+      const c=new Set(cov);pr[i].ones.forEach(m=>c.add(m));
+      cur.push(pr[i]);go(i+1,cur,c,lits+pr[i].lit);cur.pop();
+    }
+  })(0,[],new Set(),0);
+  return best.slice(0,8).map(p=>({t:'S',imps:p,html:p.map(x=>x.html).join(' + '),sig:p.map(x=>x.key).sort().join('+')}));
+}
+
+/* ---------- Đọc đề ---------- */
+function parse(){
+  const f=S.f;let n,cyc=[],dt,z=null;
+  const tok=s=>s.split(/[\s,;]+/).filter(Boolean);
+  if(S.m==='mod'){
+    const M=Math.floor(+$('M').value);
+    if(!(M>=2&&M<=16))return{err:'Nhập modul M từ 2 đến 16.'};
+    n=Math.max(2,Math.ceil(Math.log2(M)));
+    for(let i=0;i<M;i++)cyc.push(S.d==='up'?i:M-1-i);
+    dt=`${S.d==='up'?'đếm tiến':'đếm lùi'}, modul ${M}`;
+  }else if(S.m==='seq'){
+    const a=tok($('seq').value).map(Number);
+    if(a.some(v=>!Number.isInteger(v)||v<0||v>15))return{err:'Dãy chỉ gồm các số nguyên từ 0 đến 15.'};
+    cyc=[...new Set(a)];
+    if(cyc.length<2)return{err:'Nhập ít nhất 2 trạng thái khác nhau.'};
+    n=Math.max(2,Math.ceil(Math.log2(Math.max(...cyc)+1)));
+    dt=`tự hành, dãy ${cyc.join(', ')}`;
+  }else if(S.m==='z'){
+    const a=ZV.z1,b=ZV.z2,len=a.length;
+    if(len<2)return{err:'Nhập ít nhất 2 nhịp cho Z1 và Z2.'};
+    const cnt={'00':0,'01':0,'10':0,'11':0};
+    for(let i=0;i<len;i++){const k=''+a[i]+b[i];cyc.push((a[i]<<3)|(b[i]<<2)|cnt[k]);cnt[k]++}
+    const bad=Object.keys(cnt).find(k=>cnt[k]>4);
+    if(bad)return{err:`Tổ hợp Z1Z2 = ${bad} lặp ${cnt[bad]} lần, vượt 4 lần nên 2 bit phụ không đủ phân biệt.`};
+    n=4;z={cnt,len};dt=`tự hành 2 đầu ra Z1, Z2, ${len} nhịp`;
+  }else{
+    const t=tok($('bin').value);
+    if(t.some(x=>!/^[01]{1,4}$/.test(x)))return{err:'Mỗi trạng thái là chuỗi 0/1 dài tối đa 4 bit.'};
+    n=Math.max(2,...t.map(x=>x.length));
+    cyc=[...new Set(t.map(x=>parseInt(x,2)))];
+    if(cyc.length<2)return{err:'Nhập ít nhất 2 trạng thái khác nhau.'};
+    dt=cyc.join()==='0,1,3,2,6,7,5,4'?'chuyển trạng thái mã Gray 3 bit':'chu trình nhị phân';
+  }
+  return{f,n,cyc,title:`Thiết kế bộ đếm đồng bộ, ${dt}, dùng phần tử ${f}-FF`,z};
+}
+
+/* ---------- Giải ---------- */
+let D=null,SEL={};
+function solve(keep){
+  if(!keep)SEL={};
+  const r=parse(),out=$('out');
+  if(r.err){D=null;out.innerHTML=`<p class="err">${r.err}</p>`;return}
+  const {f,n,cyc}=r,N=1<<n,nx=Array(N).fill(null);
+  cyc.forEach((c,i)=>nx[c]=cyc[(i+1)%cyc.length]);
+  const nm=[...Array(n)].map((_,p)=>p+1);
+  const rows=[...Array(N).keys()].map(s=>({s,cur:bits(s,n),nx:nx[s],nb:nx[s]===null?null:bits(nx[s],n),
+    ex:nm.map((_,p)=>ex(f,bits(s,n)[p],nx[s]===null?null:bits(nx[s],n)[p]))}));
+  const dual=f==='JK'||f==='RS',pa=f==='JK'?'J':f==='RS'?'R':f,pb=f==='JK'?'K':'S';
+  const groups=nm.map((ff,p)=>{
+    const mk=(pre,k)=>{const v=rows.map(x=>x.ex[p][k]);return{id:pre+ff,pre,ff,vals:v,cov:covers(v,n,nm)}};
+    const inputs=dual?[mk(pa,0),mk(pb,1)]:[mk(pa,0)];
+    if(dual&&$('cShare').checked){
+      const A=inputs[0].cov,B=inputs[1].cov;let done=false;
+      for(let i=0;i<A.length&&!done;i++)for(let j=0;j<B.length&&!done;j++)
+        if(A[i].sig&&A[i].sig===B[j].sig){A.unshift(A.splice(i,1)[0]);B.unshift(B.splice(j,1)[0]);done=true}
+    }
+    return{ff,p,inputs};
+  }).sort((a,b)=>a.ff-b.ff);
+  D={...r,N,nm,nx,rows,groups,dual,pa,pb};
+  render();
+}
+const act=i=>i.cov[Math.min(SEL[i.id]||0,i.cov.length-1)];
+const pick=(id,k)=>{SEL[id]=k;render()};
+
+function render(){
+  $('out').innerHTML=`
+  <h2>${D.title}</h2>
+  ${secAnalysis()}
+  <h2>a. Bảng chân lý</h2><div class="scroll">${secTable()}</div>
+  <h2>b. Biểu thức đầu vào ${D.dual?D.pa+', '+D.pb:D.pa}</h2>
+  <p class="note">Trạng thái không dùng là tuỳ định (X). Bấm vào “Cách khoanh khác” để đổi nhóm.</p>
+  <div class="km">${D.groups.flatMap(g=>g.inputs).map(kcard).join('')}</div>
+  <h2>c. Sơ đồ logic</h2>
+  <div class="np"><button class="btn" onclick="png()">Tải ảnh PNG</button><button class="btn g" onclick="print()">In / lưu PDF</button></div>
+  <div class="paper scroll">${circuit()}</div><p class="hint">Vuốt ngang để xem hết sơ đồ.</p>
+  <p class="note" style="margin-top:10px">${explain()}</p>`;
+}
+
+function secAnalysis(){
+  const {n,cyc,N,nm,f,z}=D,un=[...Array(N).keys()].filter(s=>D.nx[s]===null);
+  const b=s=>bits(s,n).join('');
+  const chip=s=>`<span>${b(s)} (${s})</span>`;
+  return `<p>Dùng <b>${n} ${f}-FF</b> (${nm.map(qh).join(', ')}); ${qh(nm[0])} là MSB, ${qh(nm[n-1])} là LSB. Xung nhịp C<sub>k</sub> đưa vào tất cả các FF.</p>
+  ${z?`<p class="note">Z<sub>1</sub> = ${qh(nm[0])}, Z<sub>2</sub> = ${qh(nm[1])}. Số lần xuất hiện của Z1Z2: 00 → ${z.cnt['00']}, 01 → ${z.cnt['01']}, 10 → ${z.cnt['10']}, 11 → ${z.cnt['11']}. Hai bit phụ ${qh(nm[2])}${qh(nm[3])} điền 00, 01, 10, 11 để các trạng thái không trùng nhau.</p>`:''}
+  <h3>Chu trình ${cyc.length} trạng thái</h3>
+  <div class="chain">${cyc.map(chip).join('<i>→</i>')}<i>→</i><span>${b(cyc[0])} (lặp lại)</span></div>
+  <p class="note" style="margin-top:10px">${un.length?`${un.length} trạng thái không dùng: ${un.map(s=>b(s)+' ('+s+')').join(', ')} → tuỳ định X.`:`Dùng hết ${N} trạng thái, không có trạng thái dư.`}</p>`;
+}
+
+function secTable(){
+  const {n,nm,rows,dual,pa,pb,cyc}=D,sp=$('cSplit').checked;
+  const used=$('cCyc').checked?[...cyc.map(s=>rows[s]),...rows.filter(r=>r.nx===null)]:rows;
+  const sub=nm.map(i=>qh(i)),nSub=dual?(sp?2*n:n):n;
+  let h1=`<tr><th rowspan="2">TT</th><th colspan="${n}">Hiện tại (t)</th><th colspan="${n}">Kế tiếp (t+1)</th>`;
+  let h2='<tr>'+sub.map(x=>`<th>${x}</th>`).join('')+sub.map(x=>`<th>${x}</th>`).join('');
+  if(dual&&sp){h1+=`<th colspan="${n}">${pa}</th><th colspan="${n}">${pb}</th></tr>`;h2+=nm.map(i=>`<th>${pa}<sub>${i}</sub></th>`).join('')+nm.map(i=>`<th>${pb}<sub>${i}</sub></th>`).join('')}
+  else if(dual){h1+=`<th colspan="${n}">${pa}, ${pb}</th></tr>`;h2+=nm.map(i=>`<th>${pa}<sub>${i}</sub> ${pb}<sub>${i}</sub></th>`).join('')}
+  else{h1+=`<th colspan="${n}">${pa}</th></tr>`;h2+=nm.map(i=>`<th>${pa}<sub>${i}</sub></th>`).join('')}
+  const c=(v)=>`<td class="${v==='1'?'h':v==='X'?'u':''}">${v}</td>`;
+  const body=used.map((r,k)=>{
+    const u=r.nx===null,cls=u?' class="u"':'';
+    let t=`<tr><td${cls}>${k}</td>`;
+    t+=r.cur.map(x=>`<td${cls}>${x}</td>`).join('')+(u?nm.map(()=>'<td class="u">X</td>').join(''):r.nb.map(x=>`<td>${x}</td>`).join(''));
+    if(dual&&sp)t+=[0,1].map(k2=>r.ex.map(e=>c(e[k2])).join('')).join('');
+    else if(dual)t+=r.ex.map(e=>`<td>${e[0]==='1'?`<b style="color:var(--acc)">1</b>`:e[0]} ${e[1]==='1'?`<b style="color:var(--acc)">1</b>`:e[1]}</td>`).join('');
+    else t+=r.ex.map(e=>c(e[0])).join('');
+    return t+'</tr>';
+  }).join('');
+  return `<table><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>`;
+}
+
+/* ---------- Bìa Karnaugh ---------- */
+function kcard(i){
+  const cv=act(i),cur=SEL[i.id]||0;
+  const alt=i.cov.length>1?`<div class="alt np">${i.cov.map((c,k)=>`<button class="${k===cur?'on':''}" onclick="pick('${i.id}',${k})">${c.html}</button>`).join('')}</div>`:'';
+  return `<div class="card"><div class="paper">${ksvg(i)}</div><div class="res">${i.pre}<sub>${i.ff}</sub> = ${cv.html}</div>${alt}</div>`;
+}
+function seg(ix,tot){
+  if(ix.length===tot)return[{a:0,b:tot-1}];
+  if(tot===4&&ix.length===2&&ix[0]===0&&ix[1]===3)return[{a:0,b:0,o:'l'},{a:3,b:3,o:'r'}];
+  return[{a:Math.min(...ix),b:Math.max(...ix)}];
+}
+function ksvg(i){
+  const {n,nm}=D,cv=act(i),G4=['00','01','11','10'],G2=['0','1'];
+  const R=n===4?G4:G2,C=n===4?G4:n===3?G4:G2,rl=n===4?2:1;
+  const rn=nm.slice(0,rl).map(x=>'Q'+x).join(''),cn=nm.slice(rl).map(x=>'Q'+x).join('');
+  const cs=50,gl=60,gt=52,gw=C.length*cs,gh=R.length*cs,W=gl+gw+18,H=gt+gh+16,id='c'+i.id;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Arial,sans-serif"><defs><clipPath id="${id}"><rect x="${gl-8}" y="${gt-8}" width="${gw+16}" height="${gh+16}" rx="4"/></clipPath></defs>`;
+  s+=`<text x="${gl+gw/2}" y="18" text-anchor="middle" font-size="13" font-weight="600" fill="#475569">${cn}</text><text x="${gl-8}" y="40" text-anchor="end" font-size="13" font-weight="600" fill="#475569">${rn}</text>`;
+  C.forEach((c,k)=>s+=`<text x="${gl+k*cs+cs/2}" y="40" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">${c}</text>`);
+  R.forEach((r,k)=>s+=`<text x="${gl-10}" y="${gt+k*cs+cs/2+5}" text-anchor="end" font-size="13" font-weight="600" fill="#334155">${r}</text>`);
+  R.forEach((r,a)=>C.forEach((c,b)=>{
+    const m=parseInt(r+c,2),v=i.vals[m],x=gl+b*cs,y=gt+a*cs;
+    s+=`<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="#fff" stroke="#cbd5e1" stroke-width="1.2"/>${v==='0'?'':`<text x="${x+cs/2}" y="${y+cs/2+6}" text-anchor="middle" font-size="19" font-weight="${v==='1'?700:500}" fill="${v==='1'?'#0f172a':'#94a3b8'}">${v}</text>`}<text x="${x+cs-5}" y="${y+cs-5}" text-anchor="end" font-size="10" fill="#94a3b8">${m}</text>`;
+  }));
+  s+=`<g clip-path="url(#${id})">`;
+  cv.imps.forEach((m,k)=>{
+    const col=COL[k%5],pd=5+(k%3)*2.2;
+    const ar=R.map((g,a)=>a).filter(a=>[...R[a]].every((ch,q)=>m.pat?.[q]===undefined||m.pat[q]<0||m.pat[q]==ch));
+    const ac=C.map((g,b)=>b).filter(b=>[...C[b]].every((ch,q)=>{const v=m.pat?.[R[0].length+q];return v===undefined||v<0||v==ch}));
+    seg(ar,R.length).forEach(rs=>seg(ac,C.length).forEach(c2=>{
+      const x1=gl+c2.a*cs+(c2.o==='l'?-16:pd),x2=gl+(c2.b+1)*cs-(c2.o==='r'?-16:pd);
+      const y1=gt+rs.a*cs+(rs.o==='l'?-16:pd),y2=gt+(rs.b+1)*cs-(rs.o==='r'?-16:pd);
+      s+=`<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" rx="13" fill="${col[1]}" stroke="${col[0]}" stroke-width="2.4"/>`;
+    }));
+  });
+  return s+'</g></svg>';
+}
+
+/* ---------- Sơ đồ logic: bus ngang phía trên, cổng hướng xuống ---------- */
+function circuit(){
+  const {groups,nm}=D,n=D.n,ffs=[...nm].sort((a,b)=>a-b),rank={};ffs.forEach((v,k)=>rank[v]=k);
+  const sh=$('cShare').checked,SP=320,X0=135,W=Math.max(980,X0+n*SP+60),by=62,bg=18,bx=W-35,fy=400,fw=136,fh=104,ck=568,cl=596,H=625;
+  const bus=(ff,c)=>by+(rank[ff]*2+(c?1:0))*bg;
+  const T=(x,y,t,a='start',z=13,w='normal')=>`<text x="${x}" y="${y}" text-anchor="${a}" font-family="Arial,sans-serif" font-size="${z}" font-weight="${w}" fill="#000">${t}</text>`;
+  const L=(x1,y1,x2,y2,w=1.6)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-width="${w}"/>`;
+  const dot=(x,y)=>`<circle cx="${x}" cy="${y}" r="3.3" fill="#000"/>`;
+  const sub=i=>`Q<tspan dy="3" font-size="10">${i}</tspan>`;
+  const AND=(cx,y,w,h)=>{const r=w/2,ys=y+h-r;return`<path d="M${cx-r} ${y}L${cx+r} ${y}L${cx+r} ${ys}A${r} ${r} 0 0 1 ${cx-r} ${ys}Z" fill="#fff" stroke="#000" stroke-width="1.8" stroke-linejoin="round"/>`};
+  const OR=(cx,y,w,h)=>`<path d="M${cx-w/2} ${y}Q${cx} ${y+9} ${cx+w/2} ${y}Q${cx+w/2} ${y+h*.58} ${cx} ${y+h}Q${cx-w/2} ${y+h*.58} ${cx-w/2} ${y}Z" fill="#fff" stroke="#000" stroke-width="1.8" stroke-linejoin="round"/>`;
+  const wire=(f,x,y1)=>L(x,y1,x,bus(f.ff,f.comp),1.5)+dot(x,bus(f.ff,f.comp));
+  let s=`<svg id="csv" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="min-width:780px;max-width:${W}px;display:block;margin:auto"><rect width="${W}" height="${H}" fill="#fff"/>`;
+  s+=T(W/2,30,`Sơ đồ logic: ${D.title.replace('Thiết kế ','')}`,'middle',16,'bold');
+  ffs.forEach(i=>{
+    s+=T(14,bus(i,0)+4,sub(i),'start',14)+L(48,bus(i,0),bx,bus(i,0));
+    s+=L(14,bus(i,1)-10,25,bus(i,1)-10,1.4)+T(14,bus(i,1)+4,sub(i),'start',14)+L(48,bus(i,1),bx,bus(i,1));
+  });
+  s+=T(12,ck+4,'Ck','start',14,'bold')+L(48,ck,bx,ck,1.7)+T(12,cl+4,'CLR','start',14,'bold')+L(48,cl,bx,cl,1.7);
+
+  function branch(cv,tx,ty,gy,label,side){
+    let b='';const lx=side==='right'?tx+7:tx-7,an=side==='right'?'start':'end';
+    const lab=()=>'';
+    if(cv.t==='0'||cv.t==='1'){
+      b+=L(tx,ty,tx,ty-21)+`<circle cx="${tx}" cy="${ty-26}" r="4.5" fill="#fff" stroke="#000" stroke-width="1.7"/>`+T(tx,ty-35,cv.t,'middle',13.5,'bold');
+      return b;
+    }
+    const im=cv.imps;
+    if(im.length===1){
+      const fa=im[0].fac;
+      if(fa.length===1)return b+wire(fa[0],tx,ty)+lab(14);
+      const gw=Math.max(42,fa.length*15),gh=44;
+      b+=L(tx,gy+gh,tx,ty)+AND(tx,gy,gw,gh);
+      const sp=gw-14;fa.forEach((f,k)=>b+=wire(f,tx-sp/2+k*sp/(fa.length-1),gy));
+      return b+lab(12);
+    }
+    const multi=im.some(m=>m.fac.length>1),ow=Math.max(44,im.length*16),oh=44,oy=multi?gy+26:gy;
+    b+=L(tx,oy+oh,tx,ty)+OR(tx,oy,ow,oh);
+    const osp=ow-14,ast=im.length>=3?38:42,asp=(im.length-1)*ast;
+    im.forEach((m,k)=>{
+      const px=tx-osp/2+k*osp/(im.length-1),t=(px-(tx-ow/2))/ow,py=oy+18*t*(1-t);
+      if(m.fac.length===1){b+=wire(m.fac[0],px,py);return}
+      const ax=tx-asp/2+k*ast,at=oy-58,aw=Math.max(30,m.fac.length*11),ah=32,kn=at+ah+9+(k%2)*4;
+      b+=`<polyline points="${ax},${at+ah} ${ax},${kn} ${px},${kn} ${px},${py}" fill="none" stroke="#000" stroke-width="1.5"/>`+AND(ax,at,aw,ah);
+      const fs=aw-8;m.fac.forEach((f,q)=>b+=wire(f,ax-fs/2+q*fs/(m.fac.length-1),at));
+    });
+    return b+lab(10,11.5);
+  }
+  groups.forEach((g,gi)=>{
+    const i=g.ff,x=X0+gi*SP;
+    s+=`<rect x="${x}" y="${fy}" width="${fw}" height="${fh}" fill="#fff" stroke="#000" stroke-width="1.8"/>`+T(x+fw/2,fy+56,'FF'+i,'middle',15.5,'bold');
+    const cy=fy+72,tapX=x-24;
+    s+=`<polyline points="${x},${cy-8} ${x+12},${cy} ${x},${cy+8}" fill="none" stroke="#000" stroke-width="1.6"/>`+dot(tapX,ck)+`<polyline points="${tapX},${ck} ${tapX},${cy} ${x},${cy}" fill="none" stroke="#000" stroke-width="1.6"/>`;
+    const cx=x+28,bt=fy+fh;
+    s+=T(cx,bt-8,'CLR','middle',12)+dot(cx,cl)+L(cx,cl,cx,bt+4)+`<polygon points="${cx},${bt} ${cx-4.5},${bt+10} ${cx+4.5},${bt+10}" fill="#000"/>`;
+    const qb=x+74,q=x+108;
+    s+=L(qb-7,bt-21,qb+4,bt-21,1.3)+T(qb,bt-8,sub(i),'middle',13)+L(qb,bt,qb,bt+22,1.5)+T(q,bt-8,sub(i),'middle',13)+L(q,bt,q,bt+22,1.5);
+    if(g.inputs.length===2){
+      const [A,B]=g.inputs,ca=act(A),cb=act(B),pa=x+26,pb=x+fw-26;
+      s+=T(pa,fy+20,`${A.pre}<tspan dy="3" font-size="10">${i}</tspan>`,'middle',13.5)+T(pb,fy+20,`${B.pre}<tspan dy="3" font-size="10">${i}</tspan>`,'middle',13.5);
+      const same=sh&&((ca.t==='1'&&cb.t==='1')||(ca.t==='0'&&cb.t==='0')||(ca.sig&&ca.sig===cb.sig));
+      if(same){
+        const by2=fy-22,mx=(pa+pb)/2;
+        s+=`<polyline points="${pa},${fy} ${pa},${by2} ${pb},${by2} ${pb},${fy}" fill="none" stroke="#000" stroke-width="1.6"/>`+dot(mx,by2)+branch(ca,mx,by2,275,'','right');
+      }else{
+        s+=branch(ca,pa,fy,290,'','left')+branch(cb,pb,fy,240,'','right');
+      }
+    }else{
+      const A=g.inputs[0],ca=act(A),px=x+fw/2;
+      s+=T(px,fy+20,`${A.pre}<tspan dy="3" font-size="10">${i}</tspan>`,'middle',13.5);
+      s+=branch(ca,px,fy,275,'','right');
+    }
+  });
+  return s+'</svg>';
+}
+function explain(){
+  return 'Xung Ck nối đồng thời vào chân clock của mọi FF, đường CLR nối vào chân xóa của mọi FF. Các biến Q và Q̄ lấy từ bus ngang phía trên (chấm tròn là điểm nối).';
+}
+function png(){
+  const el=$('csv');if(!el)return;
+  const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(el)],{type:'image/svg+xml;charset=utf-8'}));
+  const im=new Image();im.onload=()=>{const vb=el.viewBox.baseVal,c=document.createElement('canvas');c.width=vb.width*2.2;c.height=vb.height*2.2;
+    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=`so_do_bo_dem_${D.f}.png`;a.click()};
+  im.src=url;
+}
+
+/* ---------- Điều khiển ---------- */
+const ZV={z1:[],z2:[]};
+function zset(a,b){ZV.z1=a.split(/[\s,]+/).map(Number);ZV.z2=b.split(/[\s,]+/).map(Number);zdraw()}
+function zdraw(){
+  const row=(k,l)=>`<tr><th>${l}</th>`+ZV[k].map((v,i)=>`<td><button class="zb" data-k="${k}" data-i="${i}">${v}</button></td>`).join('')+`<td class="u">${ZV[k][0]}</td></tr>`;
+  $('zt').innerHTML='<tr><th></th>'+ZV.z1.map((_,i)=>`<th>${i}</th>`).join('')+'<th>0</th></tr>'+row('z1','Z<sub>1</sub>')+row('z2','Z<sub>2</sub>');
+}
+function mark(box,attr,val){document.querySelectorAll(`#${box} button`).forEach(b=>b.classList.toggle('on',b.dataset[attr]===val))}
+function setMode(m){S.m=m;mark('tabs','m',m);['mod','seq','z','bin'].forEach(k=>$('p_'+k).style.display=k===m?'':'none')}
+function setFF(f){S.f=f;mark('ffs','f',f)}
+function setDir(d){S.d=d;mark('dir','d',d)}
+function apply(p){
+  setMode(p.m);setFF(p.f||'JK');setDir(p.d||'up');
+  if(p.M)$('M').value=p.M;if(p.seq)$('seq').value=p.seq;if(p.z1)zset(p.z1,p.z2);if(p.bin)$('bin').value=p.bin;
+  solve();
+}
+$('chips').innerHTML=PRE.map(([g,l],gi)=>`<div style="width:100%"><small>${g}</small></div>`+l.map(([t],k)=>`<button data-g="${gi}" data-k="${k}">${t}</button>`).join('')).join('');
+$('chips').onclick=e=>{const b=e.target.closest('button');if(b)apply(PRE[b.dataset.g][1][b.dataset.k][1])};
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b){setMode(b.dataset.m);solve()}};
+$('ffs').onclick=e=>{const b=e.target.closest('button');if(b){setFF(b.dataset.f);solve()}};
+$('dir').onclick=e=>{const b=e.target.closest('button');if(b){setDir(b.dataset.d);solve()}};
+$('zt').onclick=e=>{const b=e.target.closest('.zb');if(b){ZV[b.dataset.k][b.dataset.i]^=1;zdraw();solve()}};
+$('zadd').onclick=()=>{if(ZV.z1.length<16){ZV.z1.push(0);ZV.z2.push(0);zdraw();solve()}};
+$('zdel').onclick=()=>{if(ZV.z1.length>2){ZV.z1.pop();ZV.z2.pop();zdraw();solve()}};
+$('p_bin').querySelector('.chips').onclick=e=>{const b=e.target.closest('button');if(b){$('bin').value=b.dataset.b;solve()}};
+['M','seq','bin','cShare'].forEach(k=>$(k).addEventListener('input',()=>solve()));
+$('cCyc').onchange=$('cSplit').onchange=()=>{if(D)render()};
+$('seq').value=PRE[0][1][0][1].seq;zset(Z10,Z20);$('bin').value='000, 001, 011, 010, 110, 111, 101, 100';
+apply(PRE[0][1][0][1]);
+</script>
+</body>
+</html>
